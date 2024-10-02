@@ -92,6 +92,15 @@ impl SphericalPoint {
         (1.0 - cos_angle) < tolerance.powi(2)
     }
 
+    /// Calculates the angular distance between the points
+    ///
+    /// If you need to sort points by distance, but do not need the actual angular values for each of them, consider using `SphericalPoint::minus_cotan_distance`
+    pub fn distance(&self, other: &Self) -> f32 {
+        let angle_sin = self.cartesian().cross(&other.cartesian()).magnitude();
+        let angle_cos = self.cartesian().dot(&other.cartesian());
+        angle_sin.atan2(angle_cos)
+    }
+
     /// Calculates `-1/tan(distance between points)`
     ///
     /// Useful when sorting points based on distance without needing to know the actual distance as it avoid inverse trigonometric functions. `-1/tan(x)` is increasing for `0 < x < pi`, which is (more than) the needed range
@@ -206,5 +215,36 @@ mod tests {
                 assert!((point.ra - point_2.ra).abs() < tolerance && (point.dec - point_2.dec).abs() < tolerance);
             }
         }
+    }
+
+    #[test]
+    fn distance() {
+        let tolerance = 10e-6;
+
+        let point_1_1 = SphericalPoint::new(0.0, 0.0);
+        let point_1_2 = SphericalPoint::new(0.0, PI / 2.0);
+        let distance_1 = PI / 2.0;
+        assert!((point_1_1.distance(&point_1_2) - distance_1).abs() < tolerance);
+
+        let point_2_1 = SphericalPoint::new(0.0, 0.0);
+        let point_2_2 = SphericalPoint::new(PI / 2.0, 0.0);
+        let distance_2 = PI / 2.0;
+        assert!((point_2_1.distance(&point_2_2) - distance_2).abs() < tolerance);
+
+        let point_3_1 = SphericalPoint::new(PI / 3.0, PI / 6.0);
+        let point_3_2 = SphericalPoint::new(PI / 3.0 + PI, -PI / 6.0);
+        let distance_3 = PI;
+        assert!((point_3_1.distance(&point_3_2) - distance_3).abs() < tolerance);
+
+        let point_4_1 = SphericalPoint::new(PI / 3.0, PI / 6.0);
+        let point_4_2 = SphericalPoint::new(250.0 * PI / 180.0, -25.0 * PI / 180.0);
+        let distance_4 = 169.82426 * PI / 180.0;
+        assert!((point_4_1.distance(&point_4_2) - distance_4).abs() < tolerance);
+
+        let point_5_1 = SphericalPoint::new(PI / 12.0, PI / 9.0);
+        let point_5_2 = SphericalPoint::new(PI / 4.0, -PI / 15.0);
+        println!("{}", point_5_1.distance(&point_5_2));
+        let distance_5 = 43.53911 * PI / 180.0;
+        assert!((point_5_1.distance(&point_5_2) - distance_5).abs() < tolerance);
     }
 }

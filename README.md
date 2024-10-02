@@ -48,11 +48,11 @@ State key:
 
 | Feature                                                                                                  | State |
 |----------------------------------------------------------------------------------------------------------|:-----:|
-| **Points**                                                                                               |  🟡   |
+| **Points**                                                                                               |  🟢   |
 | Spherical ↔ Cartesian conversion                                                                         |  🟢   |
 | (Approximate) equality check                                                                             |  🟢   |
 | Distance between points (metric)                                                                         |  🟢   |
-| Distance between points (angular value)                                                                  |  🔴   |
+| Distance between points (angular value)                                                                  |  🟢   |
 | **Great circles**                                                                                        |  🟡   |
 | Construction from two points                                                                             |  🟢   |
 | Construction from an arc                                                                                 |  🟢   |
