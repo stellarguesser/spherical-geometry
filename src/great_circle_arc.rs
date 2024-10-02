@@ -40,6 +40,15 @@ impl GreatCircleArc {
         self.normal
     }
 
+    /// Creates a new great circle passing through the provided point and perpendicular to the current circle arc
+    ///
+    /// # Errors
+    /// If the point and the pole of the current circle arc are essentially equal or essentially antipodal, returns `SphericalError::AntipodalOrTooClosePoints` as in the case of identical or antipodal points the great circle is not uniquely defined
+    pub fn perpendicular_circle_through_point(&self, point: &SphericalPoint) -> Result<Self, SphericalError> {
+        let point_1 = SphericalPoint::from_cartesian_vector3(self.normal());
+        Self::new(point_1, *point)
+    }
+
     /// Returns the intersections of this great circle arc with a great circle
     ///
     /// # Errors
@@ -248,5 +257,37 @@ mod tests {
         let intersections_5 = arc_5.intersect_great_circle_clamped(&circle_5).expect("The circles are not parallel");
         assert_eq!(intersections_5.len(), 1);
         assert!(intersections_5[0].approximately_equals(&SphericalPoint::new(PI / 2.0, PI / 6.0), tolerance));
+    }
+
+    #[test]
+    fn perpendicular_circle_through_point() {
+        let tolerance = 10e-6;
+
+        let equator = GreatCircleArc::new(SphericalPoint::new(0.0, 0.0), SphericalPoint::new(-PI / 2.0, 0.0)).expect("The points are fairly far away");
+        let greenwich_meridian = equator.perpendicular_circle_through_point(&SphericalPoint::new(0.0, 0.0)).expect("The points are fairly far away");
+        let new_pole = SphericalPoint::from_cartesian_vector3(greenwich_meridian.normal());
+        let new_pole_corr_1 = SphericalPoint::new(PI / 2.0, 0.0);
+        let new_pole_corr_2 = SphericalPoint::new(-PI / 2.0, 0.0);
+        assert!(new_pole.approximately_equals(&new_pole_corr_1, tolerance) || new_pole.approximately_equals(&new_pole_corr_2, tolerance));
+
+        let equator = GreatCircleArc::new(SphericalPoint::new(0.0, 0.0), SphericalPoint::new(-PI / 2.0, 0.0)).expect("The points are fairly far away");
+        let greenwich_meridian = equator.perpendicular_circle_through_point(&SphericalPoint::new(0.0, PI / 2.0)); // Telling it to pass through the North Pole, which it should always do
+        assert!(greenwich_meridian.is_err());
+
+        let circle_1 = GreatCircleArc::new(SphericalPoint::new(0.0, 0.0), SphericalPoint::new(PI / 2.0, PI / 6.0)).expect("The points are fairly far away");
+        let circle_2 = circle_1
+            .perpendicular_circle_through_point(&SphericalPoint::new(0.0, PI / 2.0))
+            .expect("The points are fairly far away");
+        let new_pole = SphericalPoint::from_cartesian_vector3(circle_2.normal());
+        let new_pole_corr_1 = SphericalPoint::new(0.0, 0.0);
+        let new_pole_corr_2 = SphericalPoint::new(PI, 0.0);
+        assert!(new_pole.approximately_equals(&new_pole_corr_1, tolerance) || new_pole.approximately_equals(&new_pole_corr_2, tolerance));
+
+        let circle_1 = GreatCircleArc::new(SphericalPoint::new(0.0, 0.0), SphericalPoint::new(PI / 2.0, PI / 6.0)).expect("The points are fairly far away");
+        let circle_2 = circle_1.perpendicular_circle_through_point(&SphericalPoint::new(0.0, 0.0)).expect("The points are fairly far away");
+        let new_pole = SphericalPoint::from_cartesian_vector3(circle_2.normal());
+        let new_pole_corr_1 = SphericalPoint::new(PI / 2.0, PI / 6.0);
+        let new_pole_corr_2 = SphericalPoint::new(-PI / 2.0, -PI / 6.0);
+        assert!(new_pole.approximately_equals(&new_pole_corr_1, tolerance) || new_pole.approximately_equals(&new_pole_corr_2, tolerance));
     }
 }

@@ -53,10 +53,11 @@ State key:
 | (Approximate) equality check                                                                             |  🟢   |
 | Distance between points (metric)                                                                         |  🟢   |
 | Distance between points (angular value)                                                                  |  🟢   |
-| **Great circles**                                                                                        |  🟡   |
+| **Great circles**                                                                                        |  🟢   |
 | Construction from two points                                                                             |  🟢   |
 | Construction from an arc                                                                                 |  🟢   |
-| Construction as a perpendicular to another circle (through a point)                                      |  🔴   |
+| Construction as a perpendicular to another circle (through a point)                                      |  🟢   |
+| Construction as a perpendicular to a circle arc (through a point)                                        |  🟢   |
 | Check if it contains a point                                                                             |  🟢   |
 | Intersections with other great circle                                                                    |  🟢   |
 | **Great circle arcs**                                                                                    |  🟡   |
