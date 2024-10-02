@@ -1,0 +1,21 @@
+name: Rust CI
+
+on: pull_request
+
+jobs:
+    test-and-clippy:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: dtolnay/rust-toolchain@stable
+              with:
+                  toolchain: stable
+                  components: 'clippy, rustfmt'
+            - name: Run tests
+              # working-directory: .
+              run: cargo test --all-features
+            - name: Run clippy
+              # working-directory: .
+              run: cargo clippy --all-targets --all-features -- -D warnings
+            - name: Check formatting
+              run: cargo fmt --all -- --check
