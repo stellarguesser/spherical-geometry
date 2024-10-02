@@ -1,0 +1,17 @@
+[package]
+name = "spherical_geometry"
+version = "0.1.0"
+authors = ["Pandicon"]
+edition = "2021"
+
+license = "MIT"
+readme = "README.md"
+
+description = "A package for working with spherical geometry"
+repository = "https://github.com/stellarguesser/spherical-geometry"
+
+keywords = ["mathematics", "geometry", "spherical-geometry", "sphere"]
+categories = ["mathematics", "science::geo"]
+
+[dependencies]
+nalgebra = "0.33.0"
