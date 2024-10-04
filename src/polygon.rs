@@ -1,4 +1,4 @@
-use crate::{GreatCircleArc, SphericalError, SphericalPoint, VEC_LEN_IS_ZERO};
+use crate::{GreatCircleArc, GreatCircle, SphericalError, SphericalPoint, VEC_LEN_IS_ZERO};
 
 /// Specifies the direction in which an edge is defined.
 ///
@@ -63,6 +63,7 @@ impl Polygon {
     /// # Errors
     /// If any of the edges fails to be constructed as a `GreatCircleArc`, returns the corresponding error. This should however never happen, as that is checked when the polygon is constructed.
     pub fn contains_point(&self, point: &SphericalPoint) -> Result<bool, SphericalError> {
+        let tiebreaker_lim = 10e-5;
         // Algorithm description:
         // 1) Find the closest edge by finding an intersection with each of the edges with a great circle perpendicular to it. Use the clamped intersection, returning one of the endpoints in case of a miss.
         // 2) Determine if the closest edge is in the correct orientation
@@ -70,30 +71,39 @@ impl Polygon {
         // Step 1
         let mut closest_edge_i = 0;
         let mut closest_edge_dist_metric = f32::INFINITY;
+        let mut tiebreaker = 0.0;
         for i in 0..self.vertices.len() - 1 {
             let edge = GreatCircleArc::new(self.vertices[i], self.vertices[i + 1])?;
             if edge.contains_point(point) {
                 return Ok(true);
             }
-            let edge_distance_metric = match edge.perpendicular_circle_through_point(point) {
+            let (tiebreaker_dist, edge_distance_metric) = match edge.perpendicular_circle_through_point(point) {
                 Ok(circle) => {
                     let closest_intersection = edge
                         .intersect_great_circle_clamped(&circle)
                         .expect("Perpendicular great circle must not be identical to the original arc.");
+                    let unclamped_dist = GreatCircle::new(self.vertices[i], self.vertices[i+1])?.intersect_great_circle(&circle).unwrap().iter().map(|p| p.minus_cotan_distance(&point)).min_by(|a, b| a.total_cmp(b)).unwrap();
                     if closest_intersection.is_empty() {
                         continue;
                     }
-                    closest_intersection[0].minus_cotan_distance(point)
+                    (unclamped_dist, closest_intersection[0].minus_cotan_distance(point))
                 }
                 Err(SphericalError::AntipodalOrTooClosePoints) => {
                     // The point is essentially the pole of the arc, so it is basically PI/2 radians away -> distance metric = -1/tan(PI/2) = 0
-                    0.0
+                    (f32::INFINITY, 0.0)
                 }
                 Err(err) => return Err(err),
             };
-            if edge_distance_metric < closest_edge_dist_metric {
+            if (edge_distance_metric - closest_edge_dist_metric).abs() < tiebreaker_lim {
+                if tiebreaker < tiebreaker_dist {
+                    closest_edge_i = i;
+                    closest_edge_dist_metric = edge_distance_metric;
+                    tiebreaker = tiebreaker_dist;
+                }
+            } else if edge_distance_metric < closest_edge_dist_metric {
                 closest_edge_i = i;
                 closest_edge_dist_metric = edge_distance_metric;
+                tiebreaker = tiebreaker_dist;
             }
         }
 
