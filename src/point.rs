@@ -103,7 +103,7 @@ impl SphericalPoint {
 
     /// Calculates `-1/tan(distance between points)`
     ///
-    /// Useful when sorting points based on distance without needing to know the actual distance as it avoid inverse trigonometric functions. `-1/tan(x)` is increasing for `0 < x < pi`, which is (more than) the needed range
+    /// Useful when sorting points based on distance without needing to know the actual distance as it avoids inverse trigonometric functions. `-1/tan(x)` is increasing for `0 < x < pi`, which is (more than) the needed range
     pub fn minus_cotan_distance(&self, other: &Self) -> f32 {
         let angle_sin = self.cartesian().cross(&other.cartesian()).magnitude();
         let angle_cos = self.cartesian().dot(&other.cartesian());
