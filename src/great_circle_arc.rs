@@ -44,9 +44,9 @@ impl GreatCircleArc {
     ///
     /// # Errors
     /// If the point and the pole of the current circle arc are essentially equal or essentially antipodal, returns `SphericalError::AntipodalOrTooClosePoints` as in the case of identical or antipodal points the great circle is not uniquely defined
-    pub fn perpendicular_circle_through_point(&self, point: &SphericalPoint) -> Result<Self, SphericalError> {
+    pub fn perpendicular_circle_through_point(&self, point: &SphericalPoint) -> Result<GreatCircle, SphericalError> {
         let point_1 = SphericalPoint::from_cartesian_vector3(self.normal());
-        Self::new(point_1, *point)
+        GreatCircle::new(point_1, *point)
     }
 
     /// Returns the intersections of this great circle arc with a great circle
