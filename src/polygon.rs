@@ -58,7 +58,7 @@ impl Polygon {
         self.edges_direction
     }
 
-    ///
+    /// Checks if the polygon contains the given point
     ///
     /// # Errors
     /// If any of the edges fails to be constructed as a `GreatCircleArc`, returns the corresponding error. This should however never happen, as that is checked when the polygon is constructed.
