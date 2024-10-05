@@ -3,6 +3,7 @@
 
 - [Basic information](#basic-information)
 - [Examples](#examples)
+  - [Filtering stars by constellation](#filtering-stars-by-constellation)
   - [GeCAA theory task](#gecaa-theory-task)
 - [Known issues](#known-issues)
     - [Polygons](#polygons)
