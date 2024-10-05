@@ -63,8 +63,8 @@ impl GreatCircle {
     /// # Errors
     /// If the great circles are (essentially) parallel (equal to each other), returns `SphericalError::IdenticalGreatCircles` as then there is an infinite amount of intersections. You can handle this error as an equivalent of "all points on the circle are intersections".
     pub fn intersect_great_circle(&self, other: &GreatCircle) -> Result<[SphericalPoint; 2], SphericalError> {
-        let normal1 = self.start.cartesian().cross(&self.end.cartesian());
-        let normal2 = other.start.cartesian().cross(&other.end.cartesian());
+        let normal1 = self.normal();
+        let normal2 = other.normal();
 
         let res = normal1.cross(&normal2);
         if res.magnitude_squared() < VEC_LEN_IS_ZERO.powi(2) {
