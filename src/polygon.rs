@@ -1,4 +1,4 @@
-use crate::{GreatCircleArc, GreatCircle, SphericalError, SphericalPoint, VEC_LEN_IS_ZERO};
+use crate::{GreatCircle, GreatCircleArc, SphericalError, SphericalPoint, VEC_LEN_IS_ZERO};
 
 /// Specifies the direction in which an edge is defined.
 ///
@@ -61,7 +61,11 @@ impl Polygon {
     /// Checks if the polygon contains the given point
     ///
     /// # Errors
+    /// This function does not produce its own errors, but it will propagate inner errors out, see below. That should however never happen - if it does, it is a bug in an implementation in the library, so please report it should you encounter it.
+    ///
     /// If any of the edges fails to be constructed as a `GreatCircleArc`, returns the corresponding error. This should however never happen, as that is checked when the polygon is constructed.
+    ///
+    /// Also, if any intersections fail the corresponding error will be returned. This should however also never happen.
     pub fn contains_point(&self, point: &SphericalPoint) -> Result<bool, SphericalError> {
         let tiebreaker_lim = 10e-5;
         // Algorithm description:
@@ -79,10 +83,13 @@ impl Polygon {
             }
             let (tiebreaker_dist, edge_distance_metric) = match edge.perpendicular_circle_through_point(point) {
                 Ok(circle) => {
-                    let closest_intersection = edge
-                        .intersect_great_circle_clamped(&circle)
-                        .expect("Perpendicular great circle must not be identical to the original arc.");
-                    let unclamped_dist = GreatCircle::new(self.vertices[i], self.vertices[i+1])?.intersect_great_circle(&circle).unwrap().iter().map(|p| p.minus_cotan_distance(&point)).min_by(|a, b| a.total_cmp(b)).unwrap();
+                    let closest_intersection = edge.intersect_great_circle_clamped(&circle)?;
+                    let unclamped_dist = GreatCircle::new(self.vertices[i], self.vertices[i + 1])?
+                        .intersect_great_circle(&circle)?
+                        .iter()
+                        .map(|p| p.minus_cotan_distance(point))
+                        .min_by(|a, b| a.total_cmp(b))
+                        .unwrap();
                     if closest_intersection.is_empty() {
                         continue;
                     }
