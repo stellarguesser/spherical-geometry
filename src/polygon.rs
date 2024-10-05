@@ -32,6 +32,9 @@ impl Polygon {
     ///
     /// Flipping the direction of the edges will cause a polygon to be the complement of what you would expect to be your polygon (if you wanted to create a small triangle around the North Pole but flipped the edge orientation, you would define the polygon to be everywhere apart from the North Pole).
     ///
+    /// # Panics
+    /// This function panics if no vertices were provided. That does not constitute a valid polygon and you should always provide at least two vertices.
+    ///
     /// # Errors
     /// If any edge is defined by essentially equal or antipodal points, returns `SphericalError::AntipodalOrTooClosePoints` as in the case of identical or antipodal points the great circle (and therefore also the edge) is not uniquely defined.
     pub fn new(vertices_in: Vec<SphericalPoint>, edges_direction: EdgeDirection) -> Result<Self, SphericalError> {
