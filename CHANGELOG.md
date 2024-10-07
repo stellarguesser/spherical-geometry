@@ -6,11 +6,12 @@ This release focused on bringing in polygons support, but that required adding s
  - Polygons construction from vertices
  - Checking if a point is inside a polygon
  - A function to get the closest point on an arc to a given point
- - An example was added to showcase the use of the `Polygon` API
+ - A function to get the angular distance between two points
+ - A function to construct a great circle perpendicular to another great circle or a great circle arc
+ - An example showcasing the use of the `Polygon` API
  - The README file now includes an example of using the `Polygon::contains_point` function for determining which stars are inside a constellation.
 
 ### 🐛 Fixed
- - Constructing a great circle perpendicular to an arc actually creates a great circle instead of a new arc.
  - Identical great circles are now checked by using the circles' precomputed normals. Before they were checked using new normals, which were however not normalized, leading to wrong results when circles were defined by points close to each other.
 
 ### Improved
