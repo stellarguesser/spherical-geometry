@@ -5,22 +5,21 @@
 - [Examples](#examples)
   - [Filtering stars by constellation](#filtering-stars-by-constellation)
   - [GeCAA theory task](#gecaa-theory-task)
-- [Known issues](#known-issues)
-    - [Polygons](#polygons)
 - [Library state](#library-state)
 
 ## Basic information
 A library for handling geometry on the surface of a sphere.
 
-This library combines spherical and vector geometry to perform operations with points, [great circles](https://en.wikipedia.org/wiki/Great_circle), great circle arcs, and polygons. A great circle is an equivalent of a straight line in planar geometry - it is the shortest path between two points on a sphere.
+This library combines spherical and vector geometry to perform operations with points, [great circles](https://en.wikipedia.org/wiki/Great_circle), great circle arcs, and spherical polygons. A great circle is an equivalent of a straight line in planar geometry - it is the shortest path between two points on a sphere.
 
 Doing geometry on a sphere requires using [spherical trigonometry](https://en.wikipedia.org/wiki/Spherical_trigonometry) and being very careful when taking `arcsin` etc. to get angles, as one often gets false results.
 
 ## Examples
+More examples can be found in the `examples` folder. The unit tests can also serve as ones.
 ### Filtering stars by constellation
-This uses the `Polygon` API, which sometimes behaves strangely, see [Known issues > Polygons](#polygons) for more details.
+This uses the `Polygon` API, checking if each of the stars is inside the tested constellation polygon.
 
-Testing all constellations on the sky, most of them worked without any issues (stars deemed to be inside the constellation are marked in green):
+Testing all constellations on the sky, all of them worked without any issues (stars deemed to be inside the constellation are marked in green).
 
 <details open>
   <summary>The constellation of Draco</summary>
@@ -74,37 +73,6 @@ fn gecaa_2020_theory_7() {
     assert!((ra_2_corr - ra_2).abs() < delta && (dec_2_corr - dec_2).abs() < delta);
 }
 ```
-More examples are either in the documentation or the unit tests can well serve as ones.
-
-## Known issues
-### Polygons
-The algorithm for determining if a point is inside a polygon sometimes behaves strangely, see the examples below.
-
-<details open>
-  <summary>The constellation of Pavo</summary>
-As before, green stars are deemed to be inside the constellation.
-
-![Issues with Pavo](./images/constellations-detection/pavo.png)
-
-</details>
-
-<details>
-  <summary>The constellation of Carina</summary>
-As before, green stars are deemed to be inside the constellation.
-
-![Issues with Carina](./images/constellations-detection/carina.png)
-
-</details>
-
-<details>
-  <summary>Handmade test case</summary>
-Here, yellow areas are deemed to be inside the polygon, purple areas are outside, blue and green are something in between (it uses MSAA with several points per square, and averages the "in-out" results). Red lines are extensions of the arcs defining the polygon, places with `?` are the vertices and `!` their antipodes.
-
-Thanks to [@bipentihexium](https://github.com/bipentihexium) for this.
-
-![Handmade broken case](./images/polygons/broken-case.png)
-
-</details>
 
 ## Library state
 The library is in active development, more features are expected to be added, see the table below for planned features. The API should not change much from the current state, but there are no guarantees.
@@ -135,6 +103,6 @@ State key:
 | Intersection with great circle                                                                           |  🟢   |
 | Clamped intersection with great circle (returning the closest endpoint if no intersection is on the arc) |  🟢   |
 | Intersection with another arc                                                                            |  🔴   |
-| **Polygons**                                                                                             |  🟡   |
+| **Polygons**                                                                                             |  🟢   |
 | Construction from vertices                                                                               |  🟢   |
-| Check if it contains a point                                                                             |  🟠   |
+| Check if it contains a point                                                                             |  🟢   |
