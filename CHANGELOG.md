@@ -14,7 +14,7 @@ This release focused on bringing in polygons support, but that required adding s
 ### 🐛 Fixed
  - Identical great circles are now checked by using the circles' precomputed normals. Before they were checked using new normals, which were however not normalized, leading to wrong results when circles were defined by points close to each other.
 
-### Improved
+### 🔧 Improved
  - The wording of the documentation was changed in several places.
 
 ## 0.1.0 - 2024-10-02 - Initial release
