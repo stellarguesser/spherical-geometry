@@ -150,7 +150,7 @@ impl GreatCircleArc {
         let mut closest_point = points_considered[0];
 
         for point_c in points_considered {
-            let distance_metric = point_c.minus_cotan_distance(&point);
+            let distance_metric = point_c.minus_cotan_distance(point);
             if distance_metric < closest_metric {
                 closest_metric = distance_metric;
                 closest_point = point_c;
@@ -196,7 +196,7 @@ impl GreatCircleArc {
         let mut closest_point = points_considered[0];
 
         for point_c in points_considered {
-            let distance_metric = point_c.minus_cotan_distance(&point);
+            let distance_metric = point_c.minus_cotan_distance(point);
             if distance_metric < closest_metric {
                 closest_metric = distance_metric;
                 closest_point = point_c;
@@ -281,8 +281,8 @@ impl GreatCircleArc {
             intersections.push(point_2);
         }
         if intersections.is_empty() {
-            let start_distance = self.start.minus_cotan_distance(&point);
-            let end_distance = self.end.minus_cotan_distance(&point);
+            let start_distance = self.start.minus_cotan_distance(point);
+            let end_distance = self.end.minus_cotan_distance(point);
 
             if end_distance < start_distance {
                 intersections.push(self.end);

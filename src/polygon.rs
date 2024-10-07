@@ -86,7 +86,7 @@ impl Polygon {
             }
             let (tiebreaker_dist, edge_distance_metric) = match edge.perpendicular_circle_through_point(point) {
                 Ok(circle) => {
-                    let closest_point = edge.closest_point_to_point_with_circle(&circle, &point)?;
+                    let closest_point = edge.closest_point_to_point_with_circle(&circle, point)?;
                     let unclamped_dist = GreatCircle::from_arc(&edge)
                         .intersect_great_circle(&circle)?
                         .iter()
