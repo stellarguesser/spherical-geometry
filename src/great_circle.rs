@@ -37,7 +37,7 @@ impl GreatCircle {
     /// Creates a new great circle passing through the provided point and perpendicular to the current circle
     ///
     /// # Errors
-    /// If the point and the pole of the current circle are essentially equal or essentially antipodal, returns `SphericalError::AntipodalOrTooClosePoints` as in the case of identical or antipodal points the great circle is not uniquely defined
+    /// If the point and the pole of the current circle are essentially equal or essentially antipodal, returns `SphericalError::AntipodalOrTooClosePoints` as in the case of identical or antipodal points the great circle is not uniquely defined.
     pub fn perpendicular_through_point(&self, point: &SphericalPoint) -> Result<Self, SphericalError> {
         let point_1 = SphericalPoint::from_cartesian_vector3(self.normal());
         Self::new(point_1, *point)
@@ -63,8 +63,8 @@ impl GreatCircle {
     /// # Errors
     /// If the great circles are (essentially) parallel (equal to each other), returns `SphericalError::IdenticalGreatCircles` as then there is an infinite amount of intersections. You can handle this error as an equivalent of "all points on the circle are intersections".
     pub fn intersect_great_circle(&self, other: &GreatCircle) -> Result<[SphericalPoint; 2], SphericalError> {
-        let normal1 = self.start.cartesian().cross(&self.end.cartesian());
-        let normal2 = other.start.cartesian().cross(&other.end.cartesian());
+        let normal1 = self.normal();
+        let normal2 = other.normal();
 
         let res = normal1.cross(&normal2);
         if res.magnitude_squared() < VEC_LEN_IS_ZERO.powi(2) {

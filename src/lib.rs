@@ -11,10 +11,12 @@
 pub mod great_circle;
 pub mod great_circle_arc;
 pub mod point;
+pub mod polygon;
 
 pub use great_circle::GreatCircle;
 pub use great_circle_arc::GreatCircleArc;
 pub use point::SphericalPoint;
+pub use polygon::{EdgeDirection, Polygon};
 
 pub(crate) const VEC_LEN_IS_ZERO: f32 = 10e-6;
 

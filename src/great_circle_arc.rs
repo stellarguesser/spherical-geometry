@@ -40,13 +40,48 @@ impl GreatCircleArc {
         self.normal
     }
 
+    /// Checks if the great circle arc contains the provided point
+    pub fn contains_point(&self, point: &SphericalPoint) -> bool {
+        let tolerance: f32 = 10e-5;
+        let great_circle = GreatCircle::from_arc(self);
+        if !great_circle.contains_point(point) {
+            return false;
+        }
+        // If the point is approximately equal to either of the ends, it obviously is on the arc
+        if self.start.approximately_equals(point, tolerance) || self.end.approximately_equals(point, tolerance) {
+            return true;
+        }
+        // If angle AOP + angle POB = angle AOB, then the point is on the arc -> Check for cos(AOP + POB) = cos(AOP) * cos(POB) - sin(AOP) * sin(POB)
+        // This way we avoid relatively costly inverse trigonometric functions
+        let cos_aob = self.start.cartesian().dot(&self.end.cartesian());
+        let cos_aop = self.start.cartesian().dot(&point.cartesian());
+        let cos_pob = point.cartesian().dot(&self.end.cartesian());
+
+        #[cfg(test)]
+        dbg!(cos_aob, cos_aop, cos_pob);
+
+        // If either of the cosines is smaller than cos(angle AOB), then the angular distance from one of the endings of the arc to the point is greater than the length of the arc -> the point must be outside
+        // This avoids the issue of points that are opposite the arc
+        if cos_aob - cos_aop > tolerance || cos_aob - cos_pob > tolerance {
+            return false;
+        }
+        let sin_aop = self.start.cartesian().cross(&point.cartesian()).magnitude();
+        let sin_pob = point.cartesian().cross(&self.end.cartesian()).magnitude();
+        let cos_aob_calc = cos_aop * cos_pob - sin_aop * sin_pob;
+
+        #[cfg(test)]
+        dbg!(cos_aob_calc);
+
+        (cos_aob - cos_aob_calc).abs() < tolerance
+    }
+
     /// Creates a new great circle passing through the provided point and perpendicular to the current circle arc
     ///
     /// # Errors
     /// If the point and the pole of the current circle arc are essentially equal or essentially antipodal, returns `SphericalError::AntipodalOrTooClosePoints` as in the case of identical or antipodal points the great circle is not uniquely defined
-    pub fn perpendicular_circle_through_point(&self, point: &SphericalPoint) -> Result<Self, SphericalError> {
+    pub fn perpendicular_circle_through_point(&self, point: &SphericalPoint) -> Result<GreatCircle, SphericalError> {
         let point_1 = SphericalPoint::from_cartesian_vector3(self.normal());
-        Self::new(point_1, *point)
+        GreatCircle::new(point_1, *point)
     }
 
     /// Returns the intersections of this great circle arc with a great circle
@@ -54,8 +89,8 @@ impl GreatCircleArc {
     /// # Errors
     /// If the great circle and the great circle containing the arc are (essentially) parallel (equal to each other), returns `SphericalError::IdenticalGreatCircles` as then there is an infinite amount of intersections. You can handle this error as an equivalent of "all points on the arc are intersections".
     pub fn intersect_great_circle(&self, other: &GreatCircle) -> Result<Vec<SphericalPoint>, SphericalError> {
-        let normal1 = self.start.cartesian().cross(&self.end.cartesian());
-        let normal2 = other.start().cartesian().cross(&other.end().cartesian());
+        let normal1 = self.normal();
+        let normal2 = other.normal();
 
         let res = normal1.cross(&normal2);
         if res.magnitude_squared() < VEC_LEN_IS_ZERO.powi(2) {
@@ -80,13 +115,103 @@ impl GreatCircleArc {
         Ok(intersections)
     }
 
+    /// Returns a point that is closest to the given point using a provided perpendicular circle. This is to be used when one has already constructed the perpendicular circle.
+    ///
+    /// The provided circle is intended to be perpendicular to the arc as that is the only time this function will return meaningful results. It does not, however, rely on this being the case, so you can use it with any circle if you find it useful.
+    ///
+    /// # Errors
+    /// If the perpendicular great circle and the great circle containing the arc are (essentially) parallel (equal to each other), returns `SphericalError::IdenticalGreatCircles` as then there is an infinite amount of intersections. This should, however, never happen and would indicate a bug in the implementation.
+    pub fn closest_point_to_point_with_circle(&self, perpendicular_circle: &GreatCircle, point: &SphericalPoint) -> Result<SphericalPoint, SphericalError> {
+        let normal1 = self.normal();
+        let normal2 = perpendicular_circle.normal();
+
+        let res = normal1.cross(&normal2);
+        if res.magnitude_squared() < VEC_LEN_IS_ZERO.powi(2) {
+            return Err(SphericalError::IdenticalGreatCircles);
+        }
+        let res_norm = res.normalize();
+        let point_1 = SphericalPoint::from_cartesian_vector3(res_norm);
+        let point_2 = SphericalPoint::from_cartesian_vector3(-res_norm);
+
+        #[cfg(test)]
+        dbg!(point_1);
+        #[cfg(test)]
+        dbg!(point_2);
+
+        let mut points_considered = vec![self.start, self.end];
+        if self.contains_point(&point_1) {
+            points_considered.push(point_1);
+        }
+        if self.contains_point(&point_2) {
+            points_considered.push(point_2);
+        }
+
+        let mut closest_metric = f32::INFINITY;
+        let mut closest_point = points_considered[0];
+
+        for point_c in points_considered {
+            let distance_metric = point_c.minus_cotan_distance(point);
+            if distance_metric < closest_metric {
+                closest_metric = distance_metric;
+                closest_point = point_c;
+            }
+        }
+        Ok(closest_point)
+    }
+
+    /// Returns the closest point to the arc from a given point.
+    ///
+    /// # Errors
+    /// If the perpendicular great circle can not be constructed (usually because the given point is a pole of the circle containing the arc), returns `SphericalError::AntipodalOrTooClosePoints` as in the case of identical or antipodal points the great circle is not uniquely defined.
+    ///
+    /// If the perpendicular great circle and the great circle containing the arc are (essentially) parallel (equal to each other), returns `SphericalError::IdenticalGreatCircles` as then there is an infinite amount of intersections. This should, however, never happen and would indicate a bug in the implementation.
+    pub fn closest_point_to_point(&self, point: &SphericalPoint) -> Result<SphericalPoint, SphericalError> {
+        let perpendicular_circle = self.perpendicular_circle_through_point(point)?;
+
+        let normal1 = self.normal();
+        let normal2 = perpendicular_circle.normal();
+
+        let res = normal1.cross(&normal2);
+        if res.magnitude_squared() < VEC_LEN_IS_ZERO.powi(2) {
+            return Err(SphericalError::IdenticalGreatCircles);
+        }
+        let res_norm = res.normalize();
+        let point_1 = SphericalPoint::from_cartesian_vector3(res_norm);
+        let point_2 = SphericalPoint::from_cartesian_vector3(-res_norm);
+
+        #[cfg(test)]
+        dbg!(point_1);
+        #[cfg(test)]
+        dbg!(point_2);
+
+        let mut points_considered = vec![self.start, self.end];
+        if self.contains_point(&point_1) {
+            points_considered.push(point_1);
+        }
+        if self.contains_point(&point_2) {
+            points_considered.push(point_2);
+        }
+
+        let mut closest_metric = f32::INFINITY;
+        let mut closest_point = points_considered[0];
+
+        for point_c in points_considered {
+            let distance_metric = point_c.minus_cotan_distance(point);
+            if distance_metric < closest_metric {
+                closest_metric = distance_metric;
+                closest_point = point_c;
+            }
+        }
+        Ok(closest_point)
+    }
+
     /// Returns the intersections of the arc with the great circle, clamped to the arc. If there are no intersections, the endpoint closest to the potential intersections (of the great circle and the arc extended into a great circle) is returned.
     ///
     /// # Errors
     /// If the great circle and the great circle containing the arc are (essentially) parallel (equal to each other), returns `SphericalError::IdenticalGreatCircles` as then there is an infinite amount of intersections. You can handle this error as an equivalent of "all points on the arc are intersections".
-    pub fn intersect_great_circle_clamped(&self, other: &GreatCircle) -> Result<Vec<SphericalPoint>, SphericalError> {
-        let normal1 = self.start.cartesian().cross(&self.end.cartesian());
-        let normal2 = other.start().cartesian().cross(&other.end().cartesian());
+    pub fn intersect_great_circle_clamped(&self, circle: &GreatCircle) -> Result<Vec<SphericalPoint>, SphericalError> {
+        let normal1 = self.normal();
+        let normal2 = circle.normal();
 
         let res = normal1.cross(&normal2);
         if res.magnitude_squared() < VEC_LEN_IS_ZERO.powi(2) {
@@ -127,39 +252,45 @@ impl GreatCircleArc {
         Ok(intersections)
     }
 
-    /// Checks if the great circle arc contains the provided point
-    pub fn contains_point(&self, point: &SphericalPoint) -> bool {
-        let tolerance: f32 = 10e-5;
-        let great_circle = GreatCircle::from_arc(self);
-        if !great_circle.contains_point(point) {
-            return false;
+    /// Returns the intersections of the arc with the great circle, clamped to the arc. If there are no intersections, the endpoint closest to the point provided is returned.
+    ///
+    /// # Errors
+    /// If the great circle and the great circle containing the arc are (essentially) parallel (equal to each other), returns `SphericalError::IdenticalGreatCircles` as then there is an infinite amount of intersections. You can handle this error as an equivalent of "all points on the arc are intersections".
+    pub fn intersect_great_circle_clamped_closest_to_point(&self, circle: &GreatCircle, point: &SphericalPoint) -> Result<Vec<SphericalPoint>, SphericalError> {
+        let normal1 = self.normal();
+        let normal2 = circle.normal();
+
+        let res = normal1.cross(&normal2);
+        if res.magnitude_squared() < VEC_LEN_IS_ZERO.powi(2) {
+            return Err(SphericalError::IdenticalGreatCircles);
         }
-        // If the point is approximately equal to either of the ends, it obviously is on the arc
-        if self.start.approximately_equals(point, tolerance) || self.end.approximately_equals(point, tolerance) {
-            return true;
-        }
-        // If angle AOP + angle POB = angle AOB, then the point is on the arc -> Check for cos(AOP + POB) = cos(AOP) * cos(POB) - sin(AOP) * sin(POB)
-        // This way we avoid relatively costly inverse trigonometric functions
-        let cos_aob = self.start.cartesian().dot(&self.end.cartesian());
-        let cos_aop = self.start.cartesian().dot(&point.cartesian());
-        let cos_pob = point.cartesian().dot(&self.end.cartesian());
+        let res_norm = res.normalize();
+        let point_1 = SphericalPoint::from_cartesian_vector3(res_norm);
+        let point_2 = SphericalPoint::from_cartesian_vector3(-res_norm);
 
         #[cfg(test)]
-        dbg!(cos_aob, cos_aop, cos_pob);
-
-        // If either of the cosines is smaller than cos(angle AOB), then the angular distance from one of the endings of the arc to the point is greater than the length of the arc -> the point must be outside
-        // This avoids the issue of points that are opposite the arc
-        if cos_aob - cos_aop > tolerance || cos_aob - cos_pob > tolerance {
-            return false;
-        }
-        let sin_aop = self.start.cartesian().cross(&point.cartesian()).magnitude();
-        let sin_pob = point.cartesian().cross(&self.end.cartesian()).magnitude();
-        let cos_aob_calc = cos_aop * cos_pob - sin_aop * sin_pob;
-
+        dbg!(point_1);
         #[cfg(test)]
-        dbg!(cos_aob_calc);
+        dbg!(point_2);
 
-        (cos_aob - cos_aob_calc).abs() < tolerance
+        let mut intersections = Vec::new();
+        if self.contains_point(&point_1) {
+            intersections.push(point_1);
+        }
+        if self.contains_point(&point_2) {
+            intersections.push(point_2);
+        }
+        if intersections.is_empty() {
+            let start_distance = self.start.minus_cotan_distance(point);
+            let end_distance = self.end.minus_cotan_distance(point);
+
+            if end_distance < start_distance {
+                intersections.push(self.end);
+            } else {
+                intersections.push(self.start);
+            }
+        }
+        Ok(intersections)
     }
 }
 

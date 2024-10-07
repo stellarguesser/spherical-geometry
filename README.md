@@ -1,11 +1,48 @@
 # Spherical Geometry
+## Table of contents
+
+- [Basic information](#basic-information)
+- [Examples](#examples)
+  - [Filtering stars by constellation](#filtering-stars-by-constellation)
+  - [GeCAA theory task](#gecaa-theory-task)
+- [Library state](#library-state)
+
+## Basic information
 A library for handling geometry on the surface of a sphere.
 
-This library combines spherical and vector geometry to perform operations with points, [great circles](https://en.wikipedia.org/wiki/Great_circle), great circle arcs... A great circle is an equivalent of a straight line in planar geometry - it is the shortest path between two points on a sphere.
+This library combines spherical and vector geometry to perform operations with points, [great circles](https://en.wikipedia.org/wiki/Great_circle), great circle arcs, and spherical polygons. A great circle is an equivalent of a straight line in planar geometry - it is the shortest path between two points on a sphere.
 
 Doing geometry on a sphere requires using [spherical trigonometry](https://en.wikipedia.org/wiki/Spherical_trigonometry) and being very careful when taking `arcsin` etc. to get angles, as one often gets false results.
 
 ## Examples
+More examples can be found in the `examples` folder. The unit tests can also serve as ones.
+### Filtering stars by constellation
+This uses the `Polygon` API, checking if each of the stars is inside the tested constellation polygon.
+
+Testing all constellations on the sky, all of them worked without any issues (stars deemed to be inside the constellation are marked in green).
+
+<details open>
+  <summary>The constellation of Draco</summary>
+
+![Draco](./images/constellations-detection/draco.png)
+
+</details>
+
+<details>
+  <summary>The constellation of Octans</summary>
+
+![Octans](./images/constellations-detection/octans.png)
+
+</details>
+
+<details>
+  <summary>The constellation of Leo</summary>
+
+![Leo](./images/constellations-detection/leo.png)
+
+</details>
+
+### GeCAA theory task
 Below is an example of solving the [GeCAA 2020 Theory task 7](https://gecaa.ee/wp-content/uploads/2020/10/GeCAA-Theoretical-solutions.pdf) analytically.
 ```rust
 use spherical_geometry::{SphericalPoint, GreatCircle};
@@ -36,7 +73,6 @@ fn gecaa_2020_theory_7() {
     assert!((ra_2_corr - ra_2).abs() < delta && (dec_2_corr - dec_2).abs() < delta);
 }
 ```
-More examples are either in the documentation or the unit tests can well serve as ones.
 
 ## Library state
 The library is in active development, more features are expected to be added, see the table below for planned features. The API should not change much from the current state, but there are no guarantees.
@@ -44,6 +80,7 @@ The library is in active development, more features are expected to be added, se
 State key:
 - 🟢 - fully implemented
 - 🟡 - partially implemented
+- 🟠 - implemented, but partially broken
 - 🔴 - not yet implemented
 
 | Feature                                                                                                  | State |
@@ -66,6 +103,6 @@ State key:
 | Intersection with great circle                                                                           |  🟢   |
 | Clamped intersection with great circle (returning the closest endpoint if no intersection is on the arc) |  🟢   |
 | Intersection with another arc                                                                            |  🔴   |
-| **Polygons**                                                                                             |  🔴   |
-| Construction from vertices                                                                               |  🔴   |
-| Check if it contains a point                                                                             |  🔴   |
+| **Polygons**                                                                                             |  🟢   |
+| Construction from vertices                                                                               |  🟢   |
+| Check if it contains a point                                                                             |  🟢   |
