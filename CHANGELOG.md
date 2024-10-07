@@ -1,4 +1,21 @@
 # Changelog
+## 0.2.0 - 2024-10-07 - Polygons support
+This release focused on bringing in polygons support, but that required adding several other features :D
+
+### ⭐ Added
+ - Polygons construction from vertices
+ - Checking if a point is inside a polygon
+ - A function to get the closest point on an arc to a given point
+ - An example was added to showcase the use of the `Polygon` API
+ - The README file now includes an example of using the `Polygon::contains_point` function for determining which stars are inside a constellation.
+
+### 🐛 Fixed
+ - Constructing a great circle perpendicular to an arc actually creates a great circle instead of a new arc.
+ - Identical great circles are now checked by using the circles' precomputed normals. Before they were checked using new normals, which were however not normalized, leading to wrong results when circles were defined by points close to each other.
+
+### Improved
+ - The wording of the documentation was changed in several places.
+
 ## 0.1.0 - 2024-10-02 - Initial release
 This is the initial release of the crate after splitting it away from another codebase.
 
