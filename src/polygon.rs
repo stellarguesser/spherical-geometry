@@ -86,17 +86,14 @@ impl Polygon {
             }
             let (tiebreaker_dist, edge_distance_metric) = match edge.perpendicular_circle_through_point(point) {
                 Ok(circle) => {
-                    let closest_intersection = edge.intersect_great_circle_clamped(&circle)?;
-                    let unclamped_dist = GreatCircle::new(self.vertices[i], self.vertices[i + 1])?
+                    let closest_point = edge.closest_point_to_point_with_circle(&circle, &point)?;
+                    let unclamped_dist = GreatCircle::from_arc(&edge)
                         .intersect_great_circle(&circle)?
                         .iter()
                         .map(|p| p.minus_cotan_distance(point))
                         .min_by(|a, b| a.total_cmp(b))
                         .unwrap();
-                    if closest_intersection.is_empty() {
-                        continue;
-                    }
-                    (unclamped_dist, closest_intersection[0].minus_cotan_distance(point))
+                    (unclamped_dist, closest_point.minus_cotan_distance(point))
                 }
                 Err(SphericalError::AntipodalOrTooClosePoints) => {
                     // The point is essentially the pole of the arc, so it is basically PI/2 radians away -> distance metric = -1/tan(PI/2) = 0
