@@ -1,4 +1,6 @@
 use nalgebra::Vector3;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::f32::consts::PI;
 
 /// A point on a unit sphere, determined by its right ascension and declination
@@ -108,6 +110,28 @@ impl SphericalPoint {
         let angle_sin = self.cartesian().cross(&other.cartesian()).magnitude();
         let angle_cos = self.cartesian().dot(&other.cartesian());
         -angle_cos / angle_sin
+    }
+}
+
+#[cfg(feature = "serde")]
+impl Serialize for SphericalPoint {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let data = (self.ra, self.dec);
+        data.serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for SphericalPoint {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let (ra, dec) = <(f32, f32)>::deserialize(deserializer)?;
+        Ok(SphericalPoint::new(ra, dec))
     }
 }
 
@@ -246,5 +270,24 @@ mod tests {
         println!("{}", point_5_1.distance(&point_5_2));
         let distance_5 = 43.53911 * PI / 180.0;
         assert!((point_5_1.distance(&point_5_2) - distance_5).abs() < tolerance);
+    }
+
+    #[cfg(feature = "serde")]
+    mod serde_tests {
+        use super::*;
+        use serde_json;
+
+        #[test]
+        fn test_serde() {
+            let orig = SphericalPoint::new(1.0, 0.5);
+            let ser = serde_json::to_string(&orig).expect("Serialization failed");
+            let deser: SphericalPoint = serde_json::from_str(&ser).expect("Deserialization failed");
+
+            assert!((orig.ra - deser.ra).abs() < f32::EPSILON, "RA values do not match");
+            assert!((orig.dec - deser.dec).abs() < f32::EPSILON, "Dec values do not match");
+            assert!((orig.x - deser.x).abs() < f32::EPSILON, "X values do not match");
+            assert!((orig.y - deser.y).abs() < f32::EPSILON, "Y values do not match");
+            assert!((orig.z - deser.z).abs() < f32::EPSILON, "Z values do not match");
+        }
     }
 }

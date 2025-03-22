@@ -1,4 +1,6 @@
 use crate::{GreatCircle, GreatCircleArc, SphericalError, SphericalPoint, VEC_LEN_IS_ZERO};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// Specifies the direction in which an edge is defined.
 ///
@@ -12,7 +14,7 @@ use crate::{GreatCircle, GreatCircleArc, SphericalError, SphericalPoint, VEC_LEN
 /// ## More intuitive method
 /// Imagine you are standing on the **inside** surface of the sphere, your head pointing in the direction of the centre of the sphere.
 /// If you were to walk along the edge and the inside of the polygon was on your left choose [Self::CounterClockwise], else choose [Self::Clockwise].
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum EdgeDirection {
     Clockwise,
     CounterClockwise,
@@ -211,6 +213,57 @@ impl Polygon {
             }
         }
         Ok(false)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl Serialize for EdgeDirection {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let value: u8 = match self {
+            EdgeDirection::Clockwise => 0,
+            EdgeDirection::CounterClockwise => 1,
+        };
+        serializer.serialize_u8(value)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for EdgeDirection {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = u8::deserialize(deserializer)?;
+        match value {
+            0 => Ok(EdgeDirection::Clockwise),
+            1 => Ok(EdgeDirection::CounterClockwise),
+            _ => Err(serde::de::Error::custom("Invalid value for EdgeDirection")),
+        }
+    }
+}
+
+#[cfg(feature = "serde")]
+impl Serialize for Polygon {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let data = (&self.vertices, &self.edges_direction);
+        data.serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for Polygon {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let (vertices, edges_direction) = <(Vec<SphericalPoint>, EdgeDirection)>::deserialize(deserializer)?;
+        Polygon::new(vertices, edges_direction).map_err(|e| serde::de::Error::custom(format!("invalid polygon: {:?}", e)))
     }
 }
 
@@ -551,5 +604,35 @@ mod tests {
         assert!(intersections_2_9.iter().any(|p| expected_i_1.approximately_equals(p, tolerance)));
         assert!(intersections_2_9.iter().any(|p| expected_i_2.approximately_equals(p, tolerance)));
         assert!(intersections_2_9.iter().any(|p| expected_i_3.approximately_equals(p, tolerance)));
+    }
+
+    #[cfg(feature = "serde")]
+    mod serde_tests {
+        use super::*;
+        use serde_json;
+
+        #[test]
+        fn test_serde() {
+            let orig = Polygon::new(
+                vec![
+                    SphericalPoint::new(0.0, 0.0),
+                    SphericalPoint::new(0.0, 0.5),
+                    SphericalPoint::new(1.2, 0.5),
+                    SphericalPoint::new(0.8, 0.25),
+                    SphericalPoint::new(1.2, 0.0),
+                ],
+                EdgeDirection::CounterClockwise,
+            )
+            .expect("The polygon should be constructable");
+            let ser = serde_json::to_string(&orig).expect("Serialization failed");
+            let deser: Polygon = serde_json::from_str(&ser).expect("Deserialization failed");
+
+            assert_eq!(orig.vertices().len(), deser.vertices().len(), "Number of vertices do not match");
+            for (orig_p, deser_p) in orig.vertices().iter().zip(deser.vertices().iter()) {
+                assert!((orig_p.ra() - deser_p.ra()).abs() < f32::EPSILON, "RA values do not match");
+                assert!((orig_p.dec() - deser_p.dec()).abs() < f32::EPSILON, "Dec values do not match");
+            }
+            assert_eq!(orig.edges_direction(), deser.edges_direction(), "Edge directions do not match");
+        }
     }
 }

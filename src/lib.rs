@@ -7,6 +7,9 @@
 //! Read more about it at [https://github.com/stellarguesser/spherical-geometry](https://github.com/stellarguesser/spherical-geometry)
 //!
 //! If it is not obvious how to use a function and there is not an example in the documentation, please open an issue/pull request in the repository. In the meantime before it gets added, you can try to take a look at the unit tests, which usually show how to use a function, which can serve as an example.
+//!
+//! ## Feature flags
+//! - `serde`: Enables serialization and deserialization of types using Serde.
 
 pub mod great_circle;
 pub mod great_circle_arc;

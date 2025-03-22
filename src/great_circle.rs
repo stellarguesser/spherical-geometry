@@ -1,5 +1,7 @@
 use crate::{GreatCircleArc, SphericalError, SphericalPoint, VEC_LEN_IS_ZERO};
 use nalgebra::Vector3;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// A great circle on a unit sphere, given by two points on it
 #[derive(Clone, Copy, Debug)]
@@ -82,6 +84,28 @@ impl GreatCircle {
     }
 }
 
+#[cfg(feature = "serde")]
+impl Serialize for GreatCircle {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let data = (self.start, self.end);
+        data.serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for GreatCircle {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let (start, end) = <(SphericalPoint, SphericalPoint)>::deserialize(deserializer)?;
+        GreatCircle::new(start, end).map_err(|e| serde::de::Error::custom(format!("invalid great circle: {:?}", e)))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -158,5 +182,26 @@ mod tests {
         let new_pole_corr_1 = SphericalPoint::new(PI / 2.0, PI / 6.0);
         let new_pole_corr_2 = SphericalPoint::new(-PI / 2.0, -PI / 6.0);
         assert!(new_pole.approximately_equals(&new_pole_corr_1, tolerance) || new_pole.approximately_equals(&new_pole_corr_2, tolerance));
+    }
+
+    #[cfg(feature = "serde")]
+    mod serde_tests {
+        use super::*;
+        use serde_json;
+
+        #[test]
+        fn test_serde() {
+            let point1 = SphericalPoint::new(1.0, 0.5);
+            let point2 = SphericalPoint::new(2.0, 1.0);
+            let orig = GreatCircle::new(point1, point2).expect("Valid points should create a GreatCircle");
+            let ser = serde_json::to_string(&orig).expect("Serialization failed");
+            let deser: GreatCircle = serde_json::from_str(&ser).expect("Deserialization failed");
+
+            assert!((orig.start().ra() - deser.start().ra()).abs() < f32::EPSILON, "Start RA values do not match");
+            assert!((orig.start().dec() - deser.start().dec()).abs() < f32::EPSILON, "Start Dec values do not match");
+            assert!((orig.end().ra() - deser.end().ra()).abs() < f32::EPSILON, "End RA values do not match");
+            assert!((orig.end().dec() - deser.end().dec()).abs() < f32::EPSILON, "End Dec values do not match");
+            assert!((orig.normal() - deser.normal()).magnitude() < f32::EPSILON, "Normal vector does not match after deserialization");
+        }
     }
 }
