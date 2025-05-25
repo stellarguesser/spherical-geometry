@@ -1,4 +1,8 @@
 # Changelog
+## 0.4.0 - 2025-05-25 - Serde support
+### ⭐ Added
+ - Serde support for structs, optional under a feature flag (https://github.com/stellarguesser/spherical-geometry/pull/11)
+
 ## 0.3.0 - 2024-12-19 - More intersections support
 ### ⭐ Added
  - Checking intersections between great circle arcs (https://github.com/stellarguesser/spherical-geometry/pull/6)
