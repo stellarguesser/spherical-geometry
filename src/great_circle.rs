@@ -1,4 +1,4 @@
-use crate::{GreatCircleArc, SphericalError, SphericalPoint, VEC_LEN_IS_ZERO};
+use crate::{GreatCircleArc, SphericalError, SphericalPoint};
 use nalgebra::Vector3;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -17,7 +17,7 @@ impl GreatCircle {
     /// # Errors
     /// If the points are essentially equal or essentially antipodal, returns [SphericalError::AntipodalOrTooClosePoints] as in the case of identical or antipodal points the great circle is not uniquely defined
     pub fn new(point1: SphericalPoint, point2: SphericalPoint) -> Result<Self, SphericalError> {
-        if point1.cartesian().cross(&point2.cartesian()).magnitude_squared() < VEC_LEN_IS_ZERO.powi(2) {
+        if point1.too_close(&point2) {
             return Err(SphericalError::AntipodalOrTooClosePoints);
         }
         Ok(Self {
@@ -68,11 +68,10 @@ impl GreatCircle {
         let normal1 = self.normal();
         let normal2 = other.normal();
 
-        let res = normal1.cross(&normal2);
-        if res.magnitude_squared() < VEC_LEN_IS_ZERO.powi(2) {
+        if crate::point::too_close_cartesian(&normal1, &normal2) {
             return Err(SphericalError::IdenticalGreatCircles);
         }
-        let res_norm = res.normalize();
+        let res_norm = normal1.cross(&normal2).normalize();
         Ok([SphericalPoint::from_cartesian_vector3(res_norm), SphericalPoint::from_cartesian_vector3(-res_norm)])
     }
 

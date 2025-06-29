@@ -1,4 +1,4 @@
-use crate::{GreatCircle, SphericalError, SphericalPoint, VEC_LEN_IS_ZERO};
+use crate::{GreatCircle, SphericalError, SphericalPoint};
 use nalgebra::Vector3;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -17,7 +17,7 @@ impl GreatCircleArc {
     /// # Errors
     /// If the points are essentially equal or essentially antipodal, returns [SphericalError::AntipodalOrTooClosePoints] as in the case of identical or antipodal points the great circle (and therefore also the arc) is not uniquely defined
     pub fn new(point1: SphericalPoint, point2: SphericalPoint) -> Result<Self, SphericalError> {
-        if point1.cartesian().cross(&point2.cartesian()).magnitude_squared() < VEC_LEN_IS_ZERO.powi(2) {
+        if point1.too_close(&point2) {
             return Err(SphericalError::AntipodalOrTooClosePoints);
         }
         Ok(Self {
@@ -51,9 +51,12 @@ impl GreatCircleArc {
         }
         // If the point is approximately equal to either of the ends, it obviously is on the arc
         if self.start.approximately_equals(point, tolerance) || self.end.approximately_equals(point, tolerance) {
+            // #[cfg(test)]
+            println!("Approximately equal to one of the endpoints");
             return true;
         }
         // If angle AOP + angle POB = angle AOB, then the point is on the arc -> Check for cos(AOP + POB) = cos(AOP) * cos(POB) - sin(AOP) * sin(POB)
+        // Check for sin(AOP + POB) = sin(AOP) * cos(POB) + cos(AOP) * sin(POB)
         // This way we avoid relatively costly inverse trigonometric functions
         let cos_aob = self.start.cartesian().dot(&self.end.cartesian());
         let cos_aop = self.start.cartesian().dot(&point.cartesian());
@@ -73,7 +76,6 @@ impl GreatCircleArc {
 
         #[cfg(test)]
         dbg!(cos_aob_calc);
-
         (cos_aob - cos_aob_calc).abs() < tolerance
     }
 
@@ -94,11 +96,10 @@ impl GreatCircleArc {
         let normal1 = self.normal();
         let normal2 = other.normal();
 
-        let res = normal1.cross(&normal2);
-        if res.magnitude_squared() < VEC_LEN_IS_ZERO.powi(2) {
+        if crate::point::too_close_cartesian(&normal1, &normal2) {
             return Err(SphericalError::IdenticalGreatCircles);
         }
-        let res_norm = res.normalize();
+        let res_norm = normal1.cross(&normal2).normalize();
         let point_1 = SphericalPoint::from_cartesian_vector3(res_norm);
         let point_2 = SphericalPoint::from_cartesian_vector3(-res_norm);
 
@@ -198,11 +199,10 @@ impl GreatCircleArc {
         let normal1 = self.normal();
         let normal2 = perpendicular_circle.normal();
 
-        let res = normal1.cross(&normal2);
-        if res.magnitude_squared() < VEC_LEN_IS_ZERO.powi(2) {
+        if crate::point::too_close_cartesian(&normal1, &normal2) {
             return Err(SphericalError::IdenticalGreatCircles);
         }
-        let res_norm = res.normalize();
+        let res_norm = normal1.cross(&normal2).normalize();
         let point_1 = SphericalPoint::from_cartesian_vector3(res_norm);
         let point_2 = SphericalPoint::from_cartesian_vector3(-res_norm);
 
@@ -244,11 +244,10 @@ impl GreatCircleArc {
         let normal1 = self.normal();
         let normal2 = perpendicular_circle.normal();
 
-        let res = normal1.cross(&normal2);
-        if res.magnitude_squared() < VEC_LEN_IS_ZERO.powi(2) {
+        if crate::point::too_close_cartesian(&normal1, &normal2) {
             return Err(SphericalError::IdenticalGreatCircles);
         }
-        let res_norm = res.normalize();
+        let res_norm = normal1.cross(&normal2).normalize();
         let point_1 = SphericalPoint::from_cartesian_vector3(res_norm);
         let point_2 = SphericalPoint::from_cartesian_vector3(-res_norm);
 
@@ -286,11 +285,10 @@ impl GreatCircleArc {
         let normal1 = self.normal();
         let normal2 = circle.normal();
 
-        let res = normal1.cross(&normal2);
-        if res.magnitude_squared() < VEC_LEN_IS_ZERO.powi(2) {
+        if crate::point::too_close_cartesian(&normal1, &normal2) {
             return Err(SphericalError::IdenticalGreatCircles);
         }
-        let res_norm = res.normalize();
+        let res_norm = normal1.cross(&normal2).normalize();
         let point_1 = SphericalPoint::from_cartesian_vector3(res_norm);
         let point_2 = SphericalPoint::from_cartesian_vector3(-res_norm);
 
@@ -333,11 +331,10 @@ impl GreatCircleArc {
         let normal1 = self.normal();
         let normal2 = circle.normal();
 
-        let res = normal1.cross(&normal2);
-        if res.magnitude_squared() < VEC_LEN_IS_ZERO.powi(2) {
+        if crate::point::too_close_cartesian(&normal1, &normal2) {
             return Err(SphericalError::IdenticalGreatCircles);
         }
-        let res_norm = res.normalize();
+        let res_norm = normal1.cross(&normal2).normalize();
         let point_1 = SphericalPoint::from_cartesian_vector3(res_norm);
         let point_2 = SphericalPoint::from_cartesian_vector3(-res_norm);
 

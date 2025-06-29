@@ -1,4 +1,4 @@
-use crate::{GreatCircle, GreatCircleArc, SphericalError, SphericalPoint, VEC_LEN_IS_ZERO};
+use crate::{GreatCircle, GreatCircleArc, SphericalError, SphericalPoint};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -41,12 +41,12 @@ impl Polygon {
     /// If any edge is defined by essentially equal or antipodal points, returns [SphericalError::AntipodalOrTooClosePoints] as in the case of identical or antipodal points the great circle (and therefore also the edge) is not uniquely defined.
     pub fn new(vertices_in: Vec<SphericalPoint>, edges_direction: EdgeDirection) -> Result<Self, SphericalError> {
         let mut vertices = vertices_in;
-        if !vertices[0].approximately_equals(&vertices[vertices.len() - 1], VEC_LEN_IS_ZERO) {
+        if !vertices[0].too_close(&vertices[vertices.len() - 1]) {
             // The last vertex is not the same as the first one -> insert the first one to the back
             vertices.push(vertices[0]);
         }
         for i in 0..vertices.len() - 1 {
-            if vertices[i].cartesian().cross(&vertices[i + 1].cartesian()).magnitude_squared() < VEC_LEN_IS_ZERO.powi(2) {
+            if vertices[i].too_close(&vertices[i + 1]) {
                 return Err(SphericalError::AntipodalOrTooClosePoints);
             }
         }

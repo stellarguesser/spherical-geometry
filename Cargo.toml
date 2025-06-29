@@ -14,7 +14,7 @@ keywords = ["mathematics", "geometry", "spherical-geometry", "sphere"]
 categories = ["mathematics", "science::geo"]
 
 [dependencies]
-nalgebra = "0.33.0"
+nalgebra = { version = "0.33.0", default-features = false, features = ["std"] }
 serde = { version = "1", optional = true }
 
 [dev-dependencies]

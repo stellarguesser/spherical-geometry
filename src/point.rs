@@ -92,6 +92,15 @@ impl SphericalPoint {
         // For roughly equal vectors, the angle between them is ~0 -> cos(angle) ~ 1 -> (1 - cos(angle)) ~ 0
         // cos(x) ~ 1-x^2/2 for small x -> 1 - cos(x) ~ x^2/2 -> tolerance needs to be squared if it is supposed to serve as a tolerance on "how many radians apart can the vectors point to still consider them as equal"
         (1.0 - cos_angle) < tolerance.powi(2)
+        // Another option is using the cross product:
+        // self.cartesian().cross(&other.cartesian()).magnitude_squared() < tolerance.powi(2)
+    }
+
+    /// Checks if this point is too close to another one to safely use this pair for constructing great circles, arcs on them, etc.
+    ///
+    /// Used internally for the checks mentioned above when creating relevant objects. In many cases this function is not enough to account for float imprecisions, use [Self::approximately_equals] with a well chosen tolerance for that
+    pub fn too_close(&self, other: &Self) -> bool {
+        too_close_cartesian(&self.cartesian(), &other.cartesian())
     }
 
     /// Calculates the angular distance between the points
@@ -133,6 +142,11 @@ impl<'de> Deserialize<'de> for SphericalPoint {
         let (ra, dec) = <(f32, f32)>::deserialize(deserializer)?;
         Ok(SphericalPoint::new(ra, dec))
     }
+}
+
+#[inline]
+pub(crate) fn too_close_cartesian(point1: &Vector3<f32>, point2: &Vector3<f32>) -> bool {
+    point1.cross(point2).magnitude_squared() < crate::VEC_LEN_IS_ZERO.powi(2)
 }
 
 #[cfg(test)]
