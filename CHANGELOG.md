@@ -1,4 +1,11 @@
 # Changelog
+## 0.4.1 - 2025-06-29 - Internal work and fixes
+### ⭐ Added
+ - Exposed internal functions for checking the equality of points (mostly a by-product of what can be found in the "Fixed" section)
+
+### 🐛 Fixed
+ - Checks for "equal points" are used consistently throughout the crate, which fixes the mismatch between creating a polygon from a list of points and from a text file with serde (the creation could be fine in the former case and break in the latter case before)
+
 ## 0.4.0 - 2025-05-25 - Serde support
 ### ⭐ Added
  - Serde support for structs, optional under a feature flag (https://github.com/stellarguesser/spherical-geometry/pull/11)
