@@ -1,6 +1,6 @@
 [package]
 name = "spherical_geometry"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["Pandicon"]
 edition = "2021"
 
