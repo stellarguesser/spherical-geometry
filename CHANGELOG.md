@@ -1,4 +1,8 @@
 # Changelog
+## 0.4.2 - 2026-06-30 - A tiny bug fix
+### 🐛 Fixed
+ - There was a print statement used for debugging tests for which the `#[cfg(test)]` conditional compilation attribute was accidentally commented out, leading to printing in many scenarios even in production code
+
 ## 0.4.1 - 2025-06-29 - Internal work and fixes
 ### ⭐ Added
  - Exposed internal functions for checking the equality of points (mostly a by-product of what can be found in the "Fixed" section)
