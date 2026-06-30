@@ -51,7 +51,7 @@ impl GreatCircleArc {
         }
         // If the point is approximately equal to either of the ends, it obviously is on the arc
         if self.start.approximately_equals(point, tolerance) || self.end.approximately_equals(point, tolerance) {
-            // #[cfg(test)]
+            #[cfg(test)]
             println!("Approximately equal to one of the endpoints");
             return true;
         }
